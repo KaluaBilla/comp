@@ -45,6 +45,10 @@ jobs:
         run: |
           mkdir -p ota
           cd ota
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "Installing wget using Chocolatey..."
+            choco install wget -y
+          fi
           wget https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.10.0.TKCCNXM/miui_VEUX_OS1.0.10.0.TKCCNXM_ab3d587cf1_13.0.zip -O ota.zip
 
       - name: Extract payload.bin (for raw input test)
@@ -94,7 +98,7 @@ jobs:
         run: |
           echo "# Payload Dumper Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Comparing **main** vs **old** branches of [rhthmcache/payload-dumper-rust](https://github.com/rhthmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
+          echo "Comparing **main** vs **old** branches of [rhythmcache/payload-dumper-rust](https://github.com/rhythmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           for os in ubuntu-latest windows-latest macos-latest; do
