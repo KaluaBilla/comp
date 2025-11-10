@@ -1,0 +1,118 @@
+name: Payload Dumper Performance Comparison
+
+on:
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        input_type: [zip, raw]
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - ${{ matrix.input_type }}
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          repository: rhthmcache/payload-dumper-rust
+          ref: main
+          path: main
+
+      - name: Checkout old branch
+        uses: actions/checkout@v4
+        with:
+          repository: rhthmcache/payload-dumper-rust
+          ref: old
+          path: old
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install hyperfine
+        run: cargo install hyperfine
+
+      - name: Build both dumpers
+        shell: bash
+        run: |
+          cd main && cargo build --release
+          cd ../old && cargo build --release
+
+      - name: Download OTA package
+        shell: bash
+        run: |
+          mkdir -p ota
+          cd ota
+          wget https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.10.0.TKCCNXM/miui_VEUX_OS1.0.10.0.TKCCNXM_ab3d587cf1_13.0.zip -O ota.zip
+
+      - name: Extract payload.bin (for raw input test)
+        if: matrix.input_type == 'raw'
+        shell: bash
+        run: |
+          cd ota
+          unzip -j ota.zip payload.bin
+
+      - name: Run benchmark
+        shell: bash
+        run: |
+          cd ota
+          if [ "${{ matrix.input_type }}" == "zip" ]; then
+            INPUT="ota.zip"
+          else
+            INPUT="payload.bin"
+          fi
+
+          hyperfine \
+            --warmup 1 \
+            --runs 3 \
+            --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
+            --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
+            "../main/target/release/payload_dumper --threads 4 --no-verify -o ../output_main $INPUT" \
+            "../old/target/release/payload_dumper --threads 4 --no-verify -o ../output_old $INPUT"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ matrix.os }}-${{ matrix.input_type }}
+          path: |
+            benchmark_*.json
+            benchmark_*.md
+
+  summarize:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+
+      - name: Create summary
+        shell: bash
+        run: |
+          echo "# Payload Dumper Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Comparing **main** vs **old** branches of [rhthmcache/payload-dumper-rust](https://github.com/rhthmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for os in ubuntu-latest windows-latest macos-latest; do
+            echo "## $(echo $os | sed 's/-latest//' | tr '[:lower:]' '[:upper:]')" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for type in zip raw; do
+              FILE="results/benchmark-${os}-${type}/benchmark_${os}_${type}.md"
+              if [ -f "$FILE" ]; then
+                echo "### ${type^^} Input" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                cat "$FILE" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          done
+
+      - name: Upload combined results
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-benchmark-results
+          path: results/
