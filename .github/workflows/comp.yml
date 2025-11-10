@@ -17,14 +17,14 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          repository: rhthmcache/payload-dumper-rust
+          repository: rhythmcache/payload-dumper-rust
           ref: main
           path: main
 
       - name: Checkout old branch
         uses: actions/checkout@v4
         with:
-          repository: rhthmcache/payload-dumper-rust
+          repository: rhythmcache/payload-dumper-rust
           ref: old
           path: old
 
