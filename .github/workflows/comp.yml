@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p ota
           cd ota
-          wget https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.10.0.TKCCNXM/miui_VEUX_OS1.0.10.0.TKCCNXM_ab3d587cf1_13.0.zip -O ota.zip
+          wget https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip -O ota.zip
 
       - name: Extract payload.bin (for raw input test)
         if: matrix.input_type == 'raw'
