@@ -68,13 +68,21 @@ jobs:
             INPUT="payload.bin"
           fi
 
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            MAIN_BIN="../main/target/release/payload_dumper.exe"
+            OLD_BIN="../old/target/release/payload_dumper.exe"
+          else
+            MAIN_BIN="../main/target/release/payload_dumper"
+            OLD_BIN="../old/target/release/payload_dumper"
+          fi
+
           hyperfine \
             --warmup 1 \
             --runs 3 \
             --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
             --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
-            "../main/target/release/payload_dumper --threads 4 --no-verify -o ../output_main $INPUT" \
-            "../old/target/release/payload_dumper --threads 4 --no-verify -o ../output_old $INPUT"
+            "$MAIN_BIN --threads 4 --no-verify -o ../output_main $INPUT" \
+            "$OLD_BIN --threads 4 --no-verify -o ../output_old $INPUT"
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
