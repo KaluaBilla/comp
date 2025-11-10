@@ -7,7 +7,7 @@ jobs:
   benchmark:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         input_type: [zip, raw]
 
     runs-on: ${{ matrix.os }}
@@ -17,14 +17,14 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          repository: rhythmcache/payload-dumper-rust
+          repository: rhthmcache/payload-dumper-rust
           ref: main
           path: main
 
       - name: Checkout old branch
         uses: actions/checkout@v4
         with:
-          repository: rhythmcache/payload-dumper-rust
+          repository: rhthmcache/payload-dumper-rust
           ref: old
           path: old
 
@@ -45,10 +45,6 @@ jobs:
         run: |
           mkdir -p ota
           cd ota
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "Installing wget using Chocolatey..."
-            choco install wget -y
-          fi
           wget https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.10.0.TKCCNXM/miui_VEUX_OS1.0.10.0.TKCCNXM_ab3d587cf1_13.0.zip -O ota.zip
 
       - name: Extract payload.bin (for raw input test)
@@ -68,21 +64,13 @@ jobs:
             INPUT="payload.bin"
           fi
 
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            MAIN_BIN="../main/target/release/payload_dumper.exe"
-            OLD_BIN="../old/target/release/payload_dumper.exe"
-          else
-            MAIN_BIN="../main/target/release/payload_dumper"
-            OLD_BIN="../old/target/release/payload_dumper"
-          fi
-
           hyperfine \
             --warmup 1 \
             --runs 3 \
             --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
             --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
-            "$MAIN_BIN --threads 4 --no-verify -o ../output_main $INPUT" \
-            "$OLD_BIN --threads 4 --no-verify -o ../output_old $INPUT"
+            "../main/target/release/payload_dumper --threads 4 --no-verify -o ../output_main $INPUT" \
+            "../old/target/release/payload_dumper --threads 4 --no-verify -o ../output_old $INPUT"
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -106,10 +94,10 @@ jobs:
         run: |
           echo "# Payload Dumper Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Comparing **main** vs **old** branches of [rhythmcache/payload-dumper-rust](https://github.com/rhythmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
+          echo "Comparing **main** vs **old** branches of [rhthmcache/payload-dumper-rust](https://github.com/rhthmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          for os in ubuntu-latest windows-latest macos-latest; do
+          for os in ubuntu-latest macos-latest; do
             echo "## $(echo $os | sed 's/-latest//' | tr '[:lower:]' '[:upper:]')" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             for type in zip raw; do
