@@ -14,36 +14,52 @@ jobs:
     name: ${{ matrix.os }} - ${{ matrix.input_type }}
 
     steps:
-      - name: Checkout main branch
+      - name: Checkout repo (for workflow scripts)
         uses: actions/checkout@v4
-        with:
-          repository: rhythmcache/payload-dumper-rust
-          ref: main
-          path: main
 
-      - name: Checkout old branch
-        uses: actions/checkout@v4
-        with:
-          repository: rhythmcache/payload-dumper-rust
-          ref: old
-          path: old
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y unzip wget || true
 
       - name: Install hyperfine
         run: cargo install hyperfine
 
-      - name: Build both dumpers
+      - name: Prepare directories
+        run: mkdir -p main old output_main output_old ota
+
+      - name: Determine macOS architecture
+        if: matrix.os == 'macos-latest'
+        id: arch
+        run: |
+          ARCH=$(uname -m)
+          echo "arch=$ARCH" >> $GITHUB_OUTPUT
+
+      - name: Download prebuilt binaries
         shell: bash
         run: |
-          cd main && cargo build --release
-          cd ../old && cargo build --release
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-linux-x86_64.zip"
+            OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-linux-x86_64.zip"
+          else
+            if [[ "${{ steps.arch.outputs.arch }}" == "arm64" || "${{ steps.arch.outputs.arch }}" == "aarch64" ]]; then
+              MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-aarch64.zip"
+              OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-macos-aarch64.zip"
+            else
+              MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-x86_64.zip"
+              OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-macos-x86_64.zip"
+            fi
+          fi
+
+          echo "Downloading binaries..."
+          wget -O main.zip "$MAIN_URL"
+          wget -O old.zip "$OLD_URL"
+
+          unzip -o main.zip -d main
+          unzip -o old.zip -d old
+          chmod +x main/payload_dumper old/payload_dumper
 
       - name: Download OTA package
         shell: bash
         run: |
-          mkdir -p ota
           cd ota
           wget https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip -O ota.zip
 
@@ -69,8 +85,8 @@ jobs:
             --runs 3 \
             --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
             --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
-            "../main/target/release/payload_dumper --threads 4 --no-verify -o ../output_main $INPUT" \
-            "../old/target/release/payload_dumper --threads 4 --no-verify -o ../output_old $INPUT"
+            "../main/payload_dumper --threads 4 --no-verify -o ../output_main $INPUT" \
+            "../old/payload_dumper --threads 4 --no-verify -o ../output_old $INPUT"
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -94,7 +110,7 @@ jobs:
         run: |
           echo "# Payload Dumper Performance Comparison" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Comparing **main** vs **old** branches of [rhthmcache/payload-dumper-rust](https://github.com/rhthmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
+          echo "Comparing **main (v0.7.7)** vs **old (v0.7.5)** releases of [rhythmcache/payload-dumper-rust](https://github.com/rhythmcache/payload-dumper-rust)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           for os in ubuntu-latest macos-latest; do
