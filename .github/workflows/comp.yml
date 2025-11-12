@@ -100,6 +100,7 @@ jobs:
           hyperfine \
             --warmup 1 \
             --runs 3 \
+            --show-output \
             --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
             --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
             "$MAIN_BIN --threads 4 --no-verify -o ../output_main $INPUT" \
