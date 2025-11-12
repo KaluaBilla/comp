@@ -82,7 +82,9 @@ jobs:
       - name: Run benchmark
         shell: bash
         run: |
+          WORK_DIR=$(pwd)
           cd ota
+          
           if [ "${{ matrix.input_type }}" == "zip" ]; then
             INPUT="ota.zip"
           else
@@ -90,21 +92,24 @@ jobs:
           fi
 
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            MAIN_BIN="../main/payload_dumper.exe"
-            OLD_BIN="../old/payload_dumper.exe"
+            MAIN_BIN="$WORK_DIR/main/payload_dumper.exe"
+            OLD_BIN="$WORK_DIR/old/payload_dumper.exe"
+            OUTPUT_MAIN="$WORK_DIR/output_main"
+            OUTPUT_OLD="$WORK_DIR/output_old"
           else
             MAIN_BIN="../main/payload_dumper"
             OLD_BIN="../old/payload_dumper"
+            OUTPUT_MAIN="../output_main"
+            OUTPUT_OLD="../output_old"
           fi
 
           hyperfine \
             --warmup 1 \
             --runs 3 \
-            --show-output \
-            --export-json ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json \
-            --export-markdown ../benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md \
-            "$MAIN_BIN --threads 4 --no-verify -o ../output_main $INPUT" \
-            "$OLD_BIN --threads 4 --no-verify -o ../output_old $INPUT"
+            --export-json "$WORK_DIR/benchmark_${{ matrix.os }}_${{ matrix.input_type }}.json" \
+            --export-markdown "$WORK_DIR/benchmark_${{ matrix.os }}_${{ matrix.input_type }}.md" \
+            "$MAIN_BIN --threads 4 --no-verify -o $OUTPUT_MAIN $INPUT" \
+            "$OLD_BIN --threads 4 --no-verify -o $OUTPUT_OLD $INPUT"
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
