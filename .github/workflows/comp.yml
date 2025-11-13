@@ -43,24 +43,24 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-linux-x86_64.zip"
+            MAIN_URL="https://github.com/KaluaBilla/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-linux-x86_64.zip"
             OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-linux-x86_64.zip"
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-windows-x86_64.zip"
+            MAIN_URL="https://github.com/KaluaBilla/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-windows-x86_64.zip"
             OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.4/payload_dumper-windows-x86_64.zip"
           else
             if [[ "${{ steps.arch.outputs.arch }}" == "arm64" || "${{ steps.arch.outputs.arch }}" == "aarch64" ]]; then
-              MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-aarch64.zip"
+              MAIN_URL="https://github.com/KaluaBilla/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-aarch64.zip"
               OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-macos-aarch64.zip"
             else
-              MAIN_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-x86_64.zip"
+              MAIN_URL="https://github.com/KaluaBilla/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.7/payload_dumper-macos-x86_64.zip"
               OLD_URL="https://github.com/rhythmcache/payload-dumper-rust/releases/download/payload-dumper-rust-v0.7.5/payload_dumper-macos-x86_64.zip"
             fi
           fi
 
           echo "Downloading binaries..."
-          wget -O main.zip "$MAIN_URL"
-          wget -O old.zip "$OLD_URL"
+          wget -O -q main.zip "$MAIN_URL"
+          wget -O -q old.zip "$OLD_URL"
 
           unzip -o main.zip -d main
           unzip -o old.zip -d old
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           cd ota
-          wget https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip -O ota.zip
+          wget -q https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip -O ota.zip
 
       - name: Extract payload.bin (for raw input test)
         if: matrix.input_type == 'raw'
