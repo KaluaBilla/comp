@@ -59,8 +59,8 @@ jobs:
           fi
 
           echo "Downloading binaries..."
-          wget -O -q main.zip "$MAIN_URL"
-          wget -O -q old.zip "$OLD_URL"
+          wget -q -O main.zip "$MAIN_URL"
+          wget -q -O old.zip "$OLD_URL"
 
           unzip -o main.zip -d main
           unzip -o old.zip -d old
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           cd ota
-          wget -q https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip -O ota.zip
+          wget -q -O ota.zip https://dl.google.com/dl/android/aosp/akita-ota-ud2a.231203.054-6b2d9ff8.zip
 
       - name: Extract payload.bin (for raw input test)
         if: matrix.input_type == 'raw'
